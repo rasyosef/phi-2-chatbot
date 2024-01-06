@@ -26,7 +26,7 @@ def generate(prompt, chat_history):
   final_prompt += "User: " + prompt + "\n"
   final_prompt += "Output:"
 
-  generated_text = phi2(final_prompt, max_length=256)[0]["generated_text"]
+  generated_text = phi2(final_prompt, max_length=128)[0]["generated_text"]
   response = generated_text.split("Output:")[1].split("User:")[0]
 
   if "Assistant:" in response:
