@@ -26,7 +26,7 @@ def generate(prompt, chat_history):
   final_prompt += "User: " + prompt + "\n"
   final_prompt += "Output:"
 
-  generated_text = phi2(final_prompt, max_new_tokens=16)[0]["generated_text"]
+  generated_text = phi2(final_prompt, max_new_tokens=32)[0]["generated_text"]
   response = generated_text.split("Output:")[1].split("User:")[0]
 
   if "Assistant:" in response:
@@ -38,7 +38,11 @@ def generate(prompt, chat_history):
 
 # Chat interface with gradio
 with gr.Blocks() as demo:
-  gr.Markdown("# Phi-2 Chatbot Demo")
+  gr.Markdown("""
+  # Phi-2 Chatbot Demo
+
+  This chatbot was created using Microsoft's [phi-2](https://huggingface.co/microsoft/phi-2) model. To speed up inference, `max_new_tokens` has been set to `32` in the text generation pipeline. It might take up to 120 seconds for each response to be generated.
+  """)
 
   chatbot = gr.Chatbot()
   msg = gr.Textbox()
