@@ -43,7 +43,7 @@ with gr.Blocks() as demo:
 
   This chatbot was created using Microsoft's 2.7 billion parameter [phi-2](https://huggingface.co/microsoft/phi-2) Transformer model. 
   
-  In order to reduce the response time on this hardware, `max_new_tokens` has been set to `42` in the text generation pipeline. It takes up to *150 seconds* for each response to be generated.
+  In order to reduce the response time on this hardware, `max_new_tokens` has been set to `42` in the text generation pipeline. It takes up to `150 seconds` for each response to be generated.
   """)
 
   chatbot = gr.Chatbot()
