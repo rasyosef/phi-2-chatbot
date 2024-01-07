@@ -27,7 +27,10 @@ def generate(prompt, chat_history, max_new_tokens):
   final_prompt += "Output:"
 
   generated_text = phi2(final_prompt, max_new_tokens=max_new_tokens)[0]["generated_text"]
-  response = generated_text.split("Output:")[1].split("User:")[0]
+  response = generated_text.split("Output:")[1]
+
+  if "User:" in response:
+    response = response.split("User:")[0]
 
   if "Assistant:" in response:
     response = response.split("Assistant:")[1].strip()
