@@ -50,8 +50,8 @@ with gr.Blocks() as demo:
 
   tokens_slider = gr.Slider(8, 128, value=24, label="Maximum new tokens", info="A larger `max_new_tokens` parameter value gives you longer text responses but at the cost of a slower response time.")
 
-  chatbot = gr.Chatbot()
-  msg = gr.Textbox()
+  chatbot = gr.Chatbot(label="Phi-2 Chatbot")
+  msg = gr.Textbox(label="Message", placeholder="Enter text here")
 
   clear = gr.ClearButton([msg, chatbot])
   msg.submit(fn=generate, inputs=[msg, chatbot, tokens_slider], outputs=[msg, chatbot])
