@@ -14,7 +14,7 @@ model = AutoModelForCausalLM.from_pretrained(checkpoint, torch_dtype=torch.float
 phi2 = pipeline("text-generation", tokenizer=tokenizer, model=model)
 
 # Function that accepts a prompt and generates text using the phi2 pipeline
-def generate(prompt, chat_history):
+def generate(prompt, chat_history, max_new_tokens):
 
   instruction = "You are a helpful assistant to 'User'. You do not respond as 'User' or pretend to be 'User'. You only respond once as 'Assistant'."
   final_prompt = f"Instruction: {instruction}\n"
@@ -26,7 +26,7 @@ def generate(prompt, chat_history):
   final_prompt += "User: " + prompt + "\n"
   final_prompt += "Output:"
 
-  generated_text = phi2(final_prompt, max_new_tokens=42)[0]["generated_text"]
+  generated_text = phi2(final_prompt, max_new_tokens=max_new_tokens)[0]["generated_text"]
   response = generated_text.split("Output:")[1].split("User:")[0]
 
   if "Assistant:" in response:
@@ -40,16 +40,17 @@ def generate(prompt, chat_history):
 with gr.Blocks() as demo:
   gr.Markdown("""
   # Phi-2 Chatbot Demo
-
   This chatbot was created using Microsoft's 2.7 billion parameter [phi-2](https://huggingface.co/microsoft/phi-2) Transformer model. 
   
-  In order to reduce the response time on this hardware, `max_new_tokens` has been set to `42` in the text generation pipeline. It takes up to `150 seconds` for each response to be generated.
+  In order to reduce the response time on this hardware, `max_new_tokens` has been set to `42` in the text generation pipeline. With the default configuration, takes approximately `150 seconds` for each response to be generated. Use the slider below to increase or decrease the length of the generated text.
   """)
+
+  tokens_slider = gr.Slider(8, 128, value=42, label="Maximum new tokens", info="A larger `max_new_tokens` parameter value gives you longer text responses but at the cost of a slower response time.")
 
   chatbot = gr.Chatbot()
   msg = gr.Textbox()
 
   clear = gr.ClearButton([msg, chatbot])
-  msg.submit(fn=generate, inputs=[msg, chatbot], outputs=[msg, chatbot])
+  msg.submit(fn=generate, inputs=[msg, chatbot, tokens_slider], outputs=[msg, chatbot])
 
 demo.launch()
