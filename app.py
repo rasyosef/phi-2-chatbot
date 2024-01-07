@@ -45,10 +45,10 @@ with gr.Blocks() as demo:
   # Phi-2 Chatbot Demo
   This chatbot was created using Microsoft's 2.7 billion parameter [phi-2](https://huggingface.co/microsoft/phi-2) Transformer model. 
   
-  In order to reduce the response time on this hardware, `max_new_tokens` has been set to `42` in the text generation pipeline. With the default configuration, takes approximately `150 seconds` for each response to be generated. Use the slider below to increase or decrease the length of the generated text.
+  In order to reduce the response time on this hardware, `max_new_tokens` has been set to `24` in the text generation pipeline. With this default configuration, it takes approximately `60 seconds` for each response to be generated. Use the slider below to increase or decrease the length of the generated text.
   """)
 
-  tokens_slider = gr.Slider(8, 128, value=42, label="Maximum new tokens", info="A larger `max_new_tokens` parameter value gives you longer text responses but at the cost of a slower response time.")
+  tokens_slider = gr.Slider(8, 128, value=24, label="Maximum new tokens", info="A larger `max_new_tokens` parameter value gives you longer text responses but at the cost of a slower response time.")
 
   chatbot = gr.Chatbot()
   msg = gr.Textbox()
