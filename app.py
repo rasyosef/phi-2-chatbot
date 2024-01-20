@@ -9,6 +9,7 @@ checkpoint = "microsoft/phi-2"
 # Download and load model and tokenizer
 tokenizer = AutoTokenizer.from_pretrained(checkpoint, trust_remote_code=True)
 model = AutoModelForCausalLM.from_pretrained(checkpoint, torch_dtype=torch.float32, device_map="cpu", trust_remote_code=True)
+model.config.eos_token_id = tokenizer.eos_token_id
 
 # Text generation pipeline
 phi2 = pipeline("text-generation", tokenizer=tokenizer, model=model)
@@ -27,10 +28,10 @@ def generate(prompt, chat_history, max_new_tokens):
   final_prompt += "Output:"
 
   generated_text = phi2(final_prompt, max_new_tokens=max_new_tokens)[0]["generated_text"]
-  response = generated_text.split("Output:")[1]
+  response = generated_text[len(final_prompt):].strip()
 
   if "User:" in response:
-    response = response.split("User:")[0]
+    response = response.split("User:")[0].strip()
 
   if "Assistant:" in response:
     response = response.split("Assistant:")[1].strip()
