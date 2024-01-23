@@ -73,7 +73,7 @@ with gr.Blocks() as demo:
   msg = gr.Textbox(label="Message", placeholder="Enter text here")
   with gr.Row():
     with gr.Column():
-      btn = gr.Button("Submit")
+      btn = gr.Button("Send")
     with gr.Column():
       clear = gr.ClearButton([msg, chatbot])
 
