@@ -80,4 +80,4 @@ with gr.Blocks() as demo:
   btn.click(fn=generate, inputs=[msg, chatbot, tokens_slider], outputs=[msg, chatbot])
   examples = gr.Examples(examples=["Who is Leonhard Euler?"], inputs=[msg])
   
-demo.launch()
+demo.queue().launch()
