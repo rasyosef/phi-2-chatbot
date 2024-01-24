@@ -11,15 +11,11 @@ checkpoint = "microsoft/phi-2"
 tokenizer = AutoTokenizer.from_pretrained(checkpoint, trust_remote_code=True)
 model = AutoModelForCausalLM.from_pretrained(checkpoint, torch_dtype=torch.float32, device_map="cpu", trust_remote_code=True)
 
-# Streamer
-streamer = TextIteratorStreamer(tokenizer=tokenizer, skip_prompt=True)
-
 # Text generation pipeline
 phi2 = pipeline(
     "text-generation", 
     tokenizer=tokenizer, 
-    model=model, 
-    streamer=streamer, 
+    model=model,  
     pad_token_id=tokenizer.eos_token_id,
     eos_token_id=tokenizer.eos_token_id,
     device_map="cpu"
@@ -38,7 +34,9 @@ def generate(prompt, chat_history, max_new_tokens):
   final_prompt += "User: " + prompt + "\n"
   final_prompt += "Output:"
 
-  thread = Thread(target=phi2, kwargs={"text_inputs":final_prompt, "max_new_tokens":max_new_tokens})
+  # Streamer
+  streamer = TextIteratorStreamer(tokenizer=tokenizer, skip_prompt=True)
+  thread = Thread(target=phi2, kwargs={"text_inputs":final_prompt, "max_new_tokens":max_new_tokens, "streamer":streamer})
   thread.start()
 
   generated_text = ""
