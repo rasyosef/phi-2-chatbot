@@ -9,7 +9,7 @@ checkpoint = "microsoft/phi-2"
 
 # Download and load model and tokenizer
 tokenizer = AutoTokenizer.from_pretrained(checkpoint, trust_remote_code=True)
-model = AutoModelForCausalLM.from_pretrained(checkpoint, torch_dtype=torch.float32, device_map="auto", trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained(checkpoint, torch_dtype=torch.float32, device_map="cpu", trust_remote_code=True)
 
 # Streamer
 streamer = TextIteratorStreamer(tokenizer=tokenizer, skip_prompt=True)
@@ -22,7 +22,7 @@ phi2 = pipeline(
     streamer=streamer, 
     pad_token_id=tokenizer.eos_token_id,
     eos_token_id=tokenizer.eos_token_id,
-    device_map="auto"
+    device_map="cpu"
 )
 
 # Function that accepts a prompt and generates text using the phi2 pipeline
