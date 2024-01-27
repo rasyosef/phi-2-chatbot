@@ -30,7 +30,7 @@ phi2 = pipeline(
 
 
 # Function that accepts a prompt and generates text using the phi2 pipeline
-def generate(prompt, chat_history, max_new_tokens):
+def generate(message, chat_history, max_new_tokens):
     instruction = "You are a helpful assistant to 'User'. You do not respond as 'User' or pretend to be 'User'. You only respond once as 'Assistant'."
     final_prompt = f"Instruction: {instruction}\n"
 
@@ -38,7 +38,7 @@ def generate(prompt, chat_history, max_new_tokens):
         final_prompt += "User: " + sent + "\n"
         final_prompt += "Assistant: " + received + "\n"
 
-    final_prompt += "User: " + prompt + "\n"
+    final_prompt += "User: " + message + "\n"
     final_prompt += "Output:"
 
     # Streamer
@@ -56,7 +56,6 @@ def generate(prompt, chat_history, max_new_tokens):
     thread.start()
 
     generated_text = ""
-    chat_history.append((prompt, ""))
     for word in streamer:
         generated_text += word
         response = generated_text.strip()
@@ -67,10 +66,7 @@ def generate(prompt, chat_history, max_new_tokens):
         if "Assistant:" in response:
             response = response.split("Assistant:")[1].strip()
 
-        chat_history.pop()
-        chat_history.append((prompt, response))
-
-        yield "", chat_history
+        yield response
 
 
 # Chat interface with gradio
@@ -92,15 +88,11 @@ with gr.Blocks() as demo:
         info="A larger `max_new_tokens` parameter value gives you longer text responses but at the cost of a slower response time.",
     )
 
-    chatbot = gr.Chatbot(label="Phi-2 Chatbot")
-    msg = gr.Textbox(label="Message", placeholder="Enter text here")
-    with gr.Row():
-        with gr.Column():
-            btn = gr.Button("Send")
-        with gr.Column():
-            clear = gr.ClearButton([msg, chatbot])
-
-    btn.click(fn=generate, inputs=[msg, chatbot, tokens_slider], outputs=[msg, chatbot])
-    examples = gr.Examples(examples=["Who is Leonhard Euler?"], inputs=[msg])
+    chatbot = gr.ChatInterface(
+        fn=generate,
+        additional_inputs=[tokens_slider],
+        stop_btn=None,
+        examples=[["Who is Leonhard Euler?"]],
+    )
 
 demo.queue().launch()
