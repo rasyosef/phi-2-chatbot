@@ -41,6 +41,12 @@ def generate(message, chat_history, max_new_tokens):
     final_prompt += "User: " + message + "\n"
     final_prompt += "Output:"
 
+    if (
+        len(tokenizer.tokenize(final_prompt))
+        >= tokenizer.model_max_length - max_new_tokens
+    ):
+        final_prompt = "Instruction: Say 'Input exceeded context size, please clear the chat history and retry!' Output:"
+
     # Streamer
     streamer = TextIteratorStreamer(
         tokenizer=tokenizer, skip_prompt=True, skip_special_tokens=True, timeout=300.0
