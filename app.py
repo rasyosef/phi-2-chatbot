@@ -1,5 +1,3 @@
-import gradio as gr
-
 import torch
 from transformers import (
     AutoTokenizer,
@@ -8,15 +6,21 @@ from transformers import (
     pipeline,
 )
 from threading import Thread
+import gradio as gr
 
-# The huggingface model id for Microsoft's phi-2 model
-checkpoint = "microsoft/phi-2"
+DEVICE = "cpu"
+if torch.cuda.is_available():
+    DEVICE = "cuda"
+
+# The huggingface model id for phi-2 instruct model
+checkpoint = "rasyosef/phi-2-instruct-v0.1"
 
 # Download and load model and tokenizer
-tokenizer = AutoTokenizer.from_pretrained(checkpoint, trust_remote_code=True)
+tokenizer = AutoTokenizer.from_pretrained(checkpoint)
 model = AutoModelForCausalLM.from_pretrained(
-    checkpoint, torch_dtype=torch.float32, device_map="cpu", trust_remote_code=True
+    checkpoint, torch_dtype=torch.float32, device_map=DEVICE
 )
+
 
 # Text generation pipeline
 phi2 = pipeline(
@@ -24,81 +28,85 @@ phi2 = pipeline(
     tokenizer=tokenizer,
     model=model,
     pad_token_id=tokenizer.eos_token_id,
-    eos_token_id=tokenizer.eos_token_id,
-    device_map="cpu",
+    eos_token_id=[tokenizer.eos_token_id],
+    device_map=DEVICE,
 )
 
 
 # Function that accepts a prompt and generates text using the phi2 pipeline
-def generate(message, chat_history, max_new_tokens):
-    instruction = "You are a helpful assistant to 'User'. You do not respond as 'User' or pretend to be 'User'. You only respond once as 'Assistant'."
-    final_prompt = f"Instruction: {instruction}\n"
+def generate(message, chat_history, max_new_tokens=64):
+
+    history = [
+        {
+            "role": "system",
+            "content": "You are Phi, a helpful AI assistant made by Microsoft and RasYosef. User will you give you a task. Your goal is to complete the task as faithfully as you can.",
+        }
+    ]
 
     for sent, received in chat_history:
-        final_prompt += "User: " + sent + "\n"
-        final_prompt += "Assistant: " + received + "\n"
+        history.append({"role": "user", "content": sent})
+        history.append({"role": "assistant", "content": received})
 
-    final_prompt += "User: " + message + "\n"
-    final_prompt += "Output:"
+    history.append({"role": "user", "content": message})
+    # print(history)
 
-    if (
-        len(tokenizer.tokenize(final_prompt))
-        >= tokenizer.model_max_length - max_new_tokens
-    ):
-        final_prompt = "Instruction: Say 'Input exceeded context size, please clear the chat history and retry!' Output:"
+    if len(tokenizer.apply_chat_template(history)) > 512:
+        yield "chat history is too long"
+    else:
+        # Streamer
+        streamer = TextIteratorStreamer(
+            tokenizer=tokenizer,
+            skip_prompt=True,
+            skip_special_tokens=True,
+            timeout=300.0,
+        )
+        thread = Thread(
+            target=phi2,
+            kwargs={
+                "text_inputs": history,
+                "max_new_tokens": max_new_tokens,
+                "streamer": streamer,
+            },
+        )
+        thread.start()
 
-    # Streamer
-    streamer = TextIteratorStreamer(
-        tokenizer=tokenizer, skip_prompt=True, skip_special_tokens=True, timeout=300.0
-    )
-    thread = Thread(
-        target=phi2,
-        kwargs={
-            "text_inputs": final_prompt,
-            "max_new_tokens": max_new_tokens,
-            "streamer": streamer,
-        },
-    )
-    thread.start()
+        generated_text = ""
+        for word in streamer:
+            generated_text += word
+            response = generated_text.strip()
 
-    generated_text = ""
-    for word in streamer:
-        generated_text += word
-        response = generated_text.strip()
-
-        if "User:" in response:
-            response = response.split("User:")[0].strip()
-
-        if "Assistant:" in response:
-            response = response.split("Assistant:")[1].strip()
-
-        yield response
+            yield response
 
 
 # Chat interface with gradio
 with gr.Blocks() as demo:
     gr.Markdown(
         """
-  # Phi-2 Chatbot Demo
-  This chatbot was created using Microsoft's 2.7 billion parameter [phi-2](https://huggingface.co/microsoft/phi-2) Transformer model. 
-  
-  In order to reduce the response time on this hardware, `max_new_tokens` has been set to `21` in the text generation pipeline. With this default configuration, it takes approximately `60 seconds` for the response to start being generated, and streamed one word at a time. Use the slider below to increase or decrease the length of the generated text.
+  # Phi-2 Chat Demo
+  This chatbot was created using a finetuned version of Microsoft's 2.7 billion parameter Phi 2 transformer model, [phi-2-instruct-v0.1](https://huggingface.co/rasyosef/phi-2-instruct-v0.1) that has underwent a post-training process that incorporates both **supervised fine-tuning** and **direct preference optimization** for instruction following.
   """
     )
 
     tokens_slider = gr.Slider(
         8,
-        128,
-        value=21,
+        256,
+        value=64,
         label="Maximum new tokens",
         info="A larger `max_new_tokens` parameter value gives you longer text responses but at the cost of a slower response time.",
     )
 
     chatbot = gr.ChatInterface(
+        chatbot=gr.Chatbot(height=400),
         fn=generate,
         additional_inputs=[tokens_slider],
         stop_btn=None,
-        examples=[["Who is Leonhard Euler?"]],
+        examples=[
+            ["Hi"],
+            ["What's the German word for 'car'?"],
+            [
+                "Molly and Abigail want to attend a beauty and modeling contest. They both want to buy new pairs of shoes and dresses. Molly buys a pair of shoes which costs $40 and a dress which costs $160. How much should Abigail budget if she wants to spend half of what Molly spent on the pair of shoes and dress?"
+            ],
+        ],
     )
 
-demo.queue().launch()
+demo.queue().launch(debug=True)
