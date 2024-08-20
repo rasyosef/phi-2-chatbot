@@ -1,4 +1,4 @@
-torch
-transformers
-accelerate
-einops
+gradio==4.38.1
+torch==2.3.1
+transformers==4.42.4
+accelerate==0.32.1
